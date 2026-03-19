@@ -204,5 +204,11 @@ python paperdive_pro.py
 1. **LaTeX 下载失败**：某些老论文或仅投递 PDF 的 arXiv 论文无法获取 `.tex` 源码，系统会自动回退到 OCR 模式。
 2. **处理速度较慢**：论文的解析、向量化、两阶段结构提取（需要多次请求 LLM）较为耗时。一篇 20 页的论文完整入库可能需要 1-3 分钟，请耐心等待。
 3. **安全清理机制**：系统内置 `_cleanup_polluted_session`，如果 LLM 发生了工具调用幻觉（如输出 `<function=>`），系统会自动清理损坏的 session 以防止对话死循环。
-
+4. 使用Web 交互时需要关闭魔法。
 ---
+## 技术栈
+- [Agno](https://github.com/agno-agi/agno) - 智能体框架
+- [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) - OCR 引擎
+- [LanceDB](https://lancedb.com/) - 向量数据库
+- [Gradio](https://gradio.app/) - Web 界面库
+- [arXiv](https://arxiv.org/) - 论文数据源
