@@ -49,7 +49,8 @@ PaperDive/
 ├── arxiv_source_reader.py # LaTeX 源码下载与解析器
 ├── structure_extractor.py # 结构/符号/依赖图提取器
 ├── ocr_pdf_reader.py    # 基于 PaddleOCR 的 PDF 解析器
-└── web_ui.py            # Gradio Web 端界面
+├── web_ui.py            # Gradio Web 端界面
+└── requirements.txt
 ```
 
 ---
@@ -206,5 +207,3 @@ python paperdive_pro.py
 3. **安全清理机制**：系统内置 `_cleanup_polluted_session`，如果 LLM 发生了工具调用幻觉（如输出 `<function=>`），系统会自动清理损坏的 session 以防止对话死循环。
 
 ---
-
-*“探索数学的深海，从 PaperDive 开始。”* 🌊
