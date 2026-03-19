@@ -1,8 +1,7 @@
 # PaperDive 
 
 **PaperDive** 是一个基于多智能体（Multi-Agent）架构的自动化学术论文分析系统，专为数学和硬核理工科学术论文的深度阅读与推理而设计。
-
-它不仅能自动从 arXiv 检索和下载论文，还能通过**双轨解析引擎（LaTeX 源码解析 + 本地 PaddleOCR）**实现对数学公式、定理、证明、定义等结构化内容的无损提取。结合大语言模型的逻辑推理能力，系统能够构建符号表、提取证明依赖链，并以极高的精确度回答关于论文内容的深度问题。
+它不仅能自动从 arXiv 检索和下载论文，还能通过双轨解析引擎（LaTeX 源码解析 + 本地 PaddleOCR）实现对数学公式、定理、证明、定义等结构化内容的无损提取。结合大语言模型的逻辑推理能力，系统能够构建符号表、提取证明依赖链，并以极高的精确度回答关于论文内容的深度问题。
 
 ---
 
@@ -50,6 +49,7 @@ PaperDive/
 ├── structure_extractor.py # 结构/符号/依赖图提取器
 ├── ocr_pdf_reader.py    # 基于 PaddleOCR 的 PDF 解析器
 ├── web_ui.py            # Gradio Web 端界面
+├── .env
 └── requirements.txt
 ```
 
@@ -135,20 +135,17 @@ pip install -r requirements.txt
     ```
 
 ### 第五步：配置大语言模型 (LLM) API
+```bash
+cp .env.example .env
+```
+编辑 .env，填写 LLM 相关配置（二选一或按需）：
 
-系统的大脑（Team Leader、 Deep Reader 等）依赖于大语言模型。代码中使用了 `OpenAILike` 接口，这意味着你可以接入任何兼容 OpenAI 接口格式的模型（如 GPT-4o、DeepSeek、Qwen、GLM 等）。
-
-在 `PaperDive_Pro` 项目根目录下，新建一个名为 `.env` 的文本文件，并填入你的 API 信息：
-
+* OpenAI 兼容接口： `OPENAI_API_KEY=your_key`
+* 自定义接口（如 ChatECNU）：
 ```env
-# 你使用的模型名称，例如 "gpt-4o", "deepseek-chat", 或者你代理商提供的特定 ID
-LLM_MODEL_ID=ecnu-plus
-
-# 你的 API 密钥
-LLM_API_KEY=sk-xxxxxxxxx_你的_API_KEY_xxxxxxxxx
-
-# 接口的 Base URL（注意：通常需要包含 /v1 后缀）
-LLM_BASE_URL=https://chat.ecnu.edu.cn/open/api/v1
+LLM_API_KEY=your_api_key
+LLM_BASE_URL=https://your-api-base/v1
+LLM_MODEL_ID=your-model-id
 ```
 *(提示：推理复杂的数学论文，强烈建议配置上下文窗口大于 32K、且具备较强逻辑推理能力的模型，如 DeepSeek V3/R1 或 Claude 3.5 Sonnet。)*
 
@@ -156,14 +153,16 @@ LLM_BASE_URL=https://chat.ecnu.edu.cn/open/api/v1
 
 配置完成后，你可以尝试启动系统。首次启动时，代码会自动创建所需的工作目录（如 `arxiv_test/` 文件夹和内置的 SQLite 数据库文件）。
 
-**启动 Web 交互界面（推荐）**
+**启动 Web 交互界面（推荐）：**
+
 提供交互式界面和出色的数学公式渲染。
 ```bash
 python web_ui.py
 ```
 当终端输出 `Running on local URL:  http://0.0.0.0:7860` 时，说明一切就绪。在浏览器中打开 `http://localhost:7860` 即可开始你的学术探索之旅！
 
-**启动 CLI 交互模式**
+**启动 CLI 交互模式：**
+
 如果你更喜欢极客范儿的终端体验：
 ```bash
 python paperdive_pro.py
