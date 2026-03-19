@@ -112,18 +112,11 @@ latex_reader = LaTeXSourceReader(
     split_on_pages=True,
 )
 
-#shared_llm = OpenAILike(
-#    id=os.getenv("MODEL_ID", "coding-glm-4.7-free"),
-#    api_key=os.getenv("OPENAI_API_KEY"),
-#    base_url=os.getenv("BASE_URL", "https://aihubmix.com/v1"),
-#    timeout=300.0,
-#)
 
 shared_llm = OpenAILike(
     id=os.getenv("LLM_MODEL_ID", "ecnu-plus"),
     api_key=os.getenv("LLM_API_KEY"),
-    base_url=os.getenv("LLM_BASE_URL", "https://chat.ecnu.edu.cn/open/api/v1
-"),
+    base_url=os.getenv("LLM_BASE_URL", "https://chat.ecnu.edu.cn/open/api/v1"),
     timeout=300.0,
 )
 
@@ -918,6 +911,49 @@ def _perform_scan() -> str:
 def scan_and_index_new_papers() -> str:
     return _perform_scan()
 
+@tool
+def get_proof_chain(paper_id: str, element_id: str) -> str:
+    """
+    返回某定理或引理的完整证明依赖链（按逻辑顺序展开）。
+
+    【调用时机】：
+    - 用户问"定理3.1的完整证明链是什么"
+    - 用户问"这个定理依赖哪些引理/定义"
+    - 需要理解一个结论的全部前置条件时
+
+    Args:
+        paper_id:   论文 ID
+        element_id: 定理或引理的 ID（如 "thm3.1"），可从 get_paper_structure 获取
+
+    Returns:
+        按依赖层级格式化的完整证明链，含各节点的内容摘要和页码。
+    """
+    chain = load_dependency_chain(paper_id, element_id)
+    if not chain:
+        return (
+            f"未找到 {element_id} 的依赖链数据。\n"
+            f"可能原因：该论文在依赖图功能上线前已索引，"
+            f"建议调用 reindex_paper('{paper_id}') 重建。"
+        )
+
+    lines = [f"**{element_id}** 的证明依赖链（共 {len(chain)} 个节点）：\n"]
+    for node in chain:
+        indent = "  " * node["depth"]
+        etype = node["element_type"].upper()
+        label = node.get("label", node["element_id"])
+        page  = f"p.{node['start_page']}" if node.get("start_page") else ""
+        content_preview = (node.get("content") or "")[:200]
+        dep_ids = node.get("depends_on", [])
+        dep_str = f"  → 依赖: {', '.join(dep_ids)}" if dep_ids else ""
+
+        lines.append(f"{indent}### [{etype}] {label} {page}")
+        if content_preview:
+            lines.append(f"{indent}{content_preview}{'…' if len(node.get('content',''))>200 else ''}")
+        if dep_str:
+            lines.append(f"{indent}{dep_str}")
+        lines.append("")
+
+    return "\n".join(lines)
 
 @tool
 def list_indexed_papers() -> str:
