@@ -206,6 +206,57 @@ python paperdive_pro.py
 3. **安全清理机制**：系统内置 `_cleanup_polluted_session`，如果 LLM 发生了工具调用幻觉（如输出 `<function=>`），系统会自动清理损坏的 session 以防止对话死循环。
 4. 使用Web 交互时需要关闭魔法。
 ---
+## 改进对比
+相比基础版本（`PaperDive.py`），`paperdive_pro.py` 在以下方面做了显著改进：
+
+### 1. **多源输入与高精度内容提取**
+- **LaTeX 源码优先**：支持下载并解析 arXiv 论文的 LaTeX 源码（通过 `download_and_parse_arxiv_source`），保留原始公式和结构，避免 OCR 误差。
+- **OCR 增强**：引入 `OcrPDFReader`（基于 PaddleOCR），可处理扫描版 PDF，支持中英文混合、数学公式，并调整 DPI 优化识别。
+- **原文分页存储**：将每页 OCR/源码内容存入 `paper_pages` 表，支持按页或按章节精确读取。
+
+### 2. **结构化知识抽取**
+- **章节/定理/定义提取**：通过 `extract_paper_structure` 抽取章节层级、定理、引理、证明、定义和关键公式，存入 `paper_structures` 和 `paper_structural_elements` 表。
+- **高层摘要生成**：利用 `extract_paper_summary` 生成论文标题、摘要、证明思路、核心技巧及三维标签（领域/内容/技巧），存入 `paper_summaries` 表。
+- **符号表提取**：通过 `extract_notation_map` 抽取论文中定义的数学符号及其含义，存入 `paper_notations` 表，支持后续查询（`get_paper_notation`）。
+- **依赖图（证明链）**：提取定理与证明之间的依赖关系（`extract_dependency_graph`），实现 `get_proof_chain` 工具，可追溯完整证明依赖树。
+
+### 3. **深度检索与查询能力**
+- **结构单元检索**：新增 `search_structural_elements`，可在定理、证明、定义等元素中精确查找（支持按 ID 或关键词）。
+- **论文目录浏览**：通过 `browse_paper_catalog` 展示所有论文的标题和三维标签，便于快速筛选。
+- **章节/页原文阅读**：`read_paper_pages` 和 `read_paper_section` 直接读取存储的原文，无需重新 OCR。
+- **符号表查询**：`get_paper_notation` 支持按 LaTeX 或含义模糊查询符号定义。
+
+### 4. **索引与数据管理**
+- **增量扫描与清理**：`_cleanup_stuck_processing` 自动移除卡住的索引记录，`_cleanup_polluted_session` 清除工具调用污染。
+- **删除与重索引**：新增 `delete_paper_data`（可选删除向量、结构、摘要、原文）和 `reindex_paper`（全量重建索引）。
+- **诊断工具**：`diagnose_paper` 可快速检查论文的本地状态（文件、向量块、结构、摘要等），便于调试。
+
+### 5. **Agent 架构与任务分工**
+- **三专家架构**：将原双 Agent（arXiv Researcher + Local RAG Expert）扩展为三专家：
+  - **arXiv Researcher**：仅负责外网检索和下载（严格遵守两步走：先搜索，再根据指令下载）。
+  - **Paper Librarian**：管理本地索引（扫描、删除、重索引、列表）。
+  - **Deep Reader**：专注精读与数学推理（拥有所有深度检索工具，并增加了证明链、符号表等）。
+- **主管增强**：Team Leader 强化了 Focus Paper 状态管理、跨论文综合、指令路由，并内置笔记工具（`save_note`/`list_notes`）。
+
+### 6. **数学推理与回答质量**
+- **推理规范**：Deep Reader 的 instructions 要求先查符号表、按依赖链从底层向上解释证明、提供直觉性回答+严谨细节。
+- **引用格式**：回答必须带引用（如 `[Theorem 3.1, p.5]`），公式保留 LaTeX。
+- **对比与综合**：主管可调用 `browse_paper_catalog` 和 `get_paper_overview` 实现多篇论文对比。
+
+### 7. **工程健壮性与可维护性**
+- **错误处理**：两阶段结构提取（LLM → 正则降级），避免单点失败；异常捕获更细致。
+- **日志与警告抑制**：屏蔽 numpy 除零警告，降低 agno 日志级别为 ERROR。
+- **环境变量与配置**：统一使用 `.env` 管理 LLM 参数，支持自定义模型端点。
+- **SQLite 表结构**：新增多个表（`paper_structures`、`paper_pages`、`paper_summaries`、`paper_structural_elements`、`paper_notations`），数据结构更完备。
+
+### 8. **用户体验**
+- **启动扫描**：交互前自动执行 `_perform_scan`，告知用户当前论文状态。
+- **详细反馈**：索引过程打印进度，返回结果包含结构/摘要/标签统计。
+- **笔记保存**：允许将问答总结保存为本地 Markdown 笔记。
+
+
+---
+
 ## 技术栈
 - [Agno](https://github.com/agno-agi/agno) - 智能体框架
 - [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) - OCR 引擎
